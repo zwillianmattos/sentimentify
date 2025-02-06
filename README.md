@@ -19,6 +19,9 @@ flowchart TD
     K --> L[Relatórios de Desempenho e Ações]
     L --> F
     L --> G
+
+    classDef inicio fill:#f9f,stroke:#333,stroke-width:4px;
+    class A,B inicio;
 ```
 
 💡 Visão Geral
@@ -78,5 +81,3 @@ Distribuído sob a licença XYZ. Veja mais detalhes em LICENÇA.md.
 Se você precisar de ajuda, entre em contato conosco pelo e-mail: suporte@sentimentify.com.
 
 
-    classDef inicio fill:#f9f,stroke:#333,stroke-width:4px;
-    class A,B inicio;
