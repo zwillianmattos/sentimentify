@@ -1,0 +1,22 @@
+# Database
+pandas
+sqlalchemy
+psycopg2-binary
+
+# NLP & Sentiment Analysis
+nltk
+textblob
+tweepy
+facebook-sdk
+instagram-private-api
+
+# Data Processing
+numpy
+scikit-learn
+
+# Utilities
+python-dotenv
+requests
+
+# Airflow
+apache-airflow==2.7.1
