@@ -4,11 +4,14 @@ from airflow.operators.python import PythonOperator
 from airflow.utils.dates import days_ago
 
 import sys
-sys.path.append('/usr/src/app')
+import os
 
-from extractors.twitter_extractor import TwitterExtractor
-from transformers.sentiment_analyzer import SentimentAnalyzer
-from loaders.postgres_loader import PostgresLoader
+# Add the app directory to the Python path
+sys.path.append('/usr/src')
+
+from app.extractors.twitter_extractor import TwitterExtractor
+from app.transformers.sentiment_analyzer import SentimentAnalyzer
+from app.loaders.postgres_loader import PostgresLoader
 import pandas as pd
 
 default_args = {

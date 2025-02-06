@@ -1,8 +1,19 @@
+-- Create the etl_sentimentify database
+CREATE DATABASE etl_sentimentify;
+
+-- Connect to the etl_sentimentify database
+\c etl_sentimentify;
+
 -- Create extension for UUID generation
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- Create enum for sentiment types
-CREATE TYPE sentiment_type AS ENUM ('positive', 'negative', 'neutral');
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'sentiment_type') THEN
+        CREATE TYPE sentiment_type AS ENUM ('positive', 'negative', 'neutral');
+    END IF;
+END$$;
 
 -- Create table for social media mentions
 CREATE TABLE IF NOT EXISTS social_mentions (
@@ -20,9 +31,9 @@ CREATE TABLE IF NOT EXISTS social_mentions (
 );
 
 -- Create index for faster queries
-CREATE INDEX idx_social_mentions_sentiment ON social_mentions(sentiment);
-CREATE INDEX idx_social_mentions_created_at ON social_mentions(created_at);
-CREATE INDEX idx_social_mentions_source ON social_mentions(source);
+CREATE INDEX IF NOT EXISTS idx_social_mentions_sentiment ON social_mentions(sentiment);
+CREATE INDEX IF NOT EXISTS idx_social_mentions_created_at ON social_mentions(created_at);
+CREATE INDEX IF NOT EXISTS idx_social_mentions_source ON social_mentions(source);
 
 -- Create table for brands/keywords being monitored
 CREATE TABLE IF NOT EXISTS monitored_terms (
@@ -57,6 +68,7 @@ END;
 $$ language 'plpgsql';
 
 -- Trigger to automatically update updated_at
+DROP TRIGGER IF EXISTS update_monitored_terms_updated_at ON monitored_terms;
 CREATE TRIGGER update_monitored_terms_updated_at
     BEFORE UPDATE ON monitored_terms
     FOR EACH ROW

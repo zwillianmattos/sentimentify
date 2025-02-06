@@ -10,6 +10,10 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
+# Copy initialization script and set permissions
+COPY init-airflow.sh /init-airflow.sh
+RUN chmod +x /init-airflow.sh
+
 USER airflow
 
 # Copy requirements and install Python packages
@@ -19,9 +23,11 @@ RUN pip install --no-cache-dir -r /requirements.txt
 # Copy application code
 COPY ./app /usr/src/app
 
-# Create DAGs folder
-RUN mkdir -p /opt/airflow/dags
+# Copy DAGs to the airflow dags folder
+COPY ./dags /opt/airflow/dags
+
+# Create DAGs folder (not needed anymore since we're copying the dags directory)
 
 EXPOSE 5432
 
-CMD ["python", "./etl_script.py"]
+ENTRYPOINT ["/init-airflow.sh"]

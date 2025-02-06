@@ -1,5 +1,5 @@
 import tweepy
-from ..config.settings import (
+from app.config.settings import (
     TWITTER_API_KEY,
     TWITTER_API_SECRET,
     TWITTER_ACCESS_TOKEN,

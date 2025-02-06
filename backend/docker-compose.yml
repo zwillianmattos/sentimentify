@@ -1,23 +1,25 @@
-version: '3'
 services:
   postgres:
     container_name: etl_sentimentify_postgres
-    image: postgres:13
+    image: postgres:15-alpine
     environment:
-      POSTGRES_USER: user
-      POSTGRES_PASSWORD: root
-      POSTGRES_DB: etl_sentimentify
-      POSTGRES_MULTIPLE_DATABASES: airflow
+      - POSTGRES_USER=airflow
+      - POSTGRES_PASSWORD=root
+      - POSTGRES_MULTIPLE_DATABASES=airflow,etl_sentimentify
+      - POSTGRES_DB=airflow
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./app/db/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./app/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+      - ./app/db/create_airflow_db.sql:/docker-entrypoint-initdb.d/02-create-airflow.sql
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d etl_sentimentify"]
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - sentimentify_network
 
   airflow-webserver:
     container_name: etl_sentimentify_webserver
@@ -25,12 +27,13 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     environment:
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://user:root@postgres/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:root@postgres/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - DATABASE_URL=postgresql://user:root@postgres:5432/etl_sentimentify
+      - DATABASE_URL=postgresql://airflow:root@postgres:5432/etl_sentimentify
       - TWITTER_API_KEY=${TWITTER_API_KEY}
       - TWITTER_API_SECRET=${TWITTER_API_SECRET}
       - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN}
@@ -43,12 +46,14 @@ services:
       - ./dags:/opt/airflow/dags
     ports:
       - "8080:8080"
-    command: airflow webserver
+    command: ["webserver"]
     healthcheck:
       test: ["CMD-SHELL", "[ -f /opt/airflow/airflow-webserver.pid ]"]
       interval: 30s
       timeout: 30s
       retries: 3
+    networks:
+      - sentimentify_network
 
   airflow-scheduler:
     container_name: etl_sentimentify_scheduler
@@ -56,12 +61,15 @@ services:
       context: .
       dockerfile: Dockerfile
     depends_on:
-      - airflow-webserver
+      airflow-webserver:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
     environment:
-      - AIRFLOW__CORE__SQL_ALCHEMY_CONN=postgresql+psycopg2://user:root@postgres/airflow
+      - AIRFLOW__DATABASE__SQL_ALCHEMY_CONN=postgresql+psycopg2://airflow:root@postgres/airflow
       - AIRFLOW__CORE__EXECUTOR=LocalExecutor
       - AIRFLOW__CORE__LOAD_EXAMPLES=False
-      - DATABASE_URL=postgresql://user:root@postgres:5432/etl_sentimentify
+      - DATABASE_URL=postgresql://airflow:root@postgres:5432/etl_sentimentify
       - TWITTER_API_KEY=${TWITTER_API_KEY}
       - TWITTER_API_SECRET=${TWITTER_API_SECRET}
       - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN}
@@ -72,7 +80,13 @@ services:
     volumes:
       - ./app:/usr/src/app
       - ./dags:/opt/airflow/dags
-    command: airflow scheduler
+    command: ["scheduler"]
+    networks:
+      - sentimentify_network
+
+networks:
+  sentimentify_network:
+    driver: bridge
 
 volumes:
   postgres_data:
